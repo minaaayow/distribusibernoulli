@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bernoulli Factory: Laboratorium Kontrol Kualitas</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  body{font-family:'Nunito',system-ui,sans-serif;background:#fff8e7;color:#1e293b}
+  h1,h2,h3,.btn,.num{font-family:'Baloo 2','Nunito',sans-serif}
+  .card{background:#fff;border:3px solid #1e293b;border-radius:1.25rem;box-shadow:0 5px 0 #1e293b}
+  .btn{border:3px solid #1e293b;border-radius:1rem;box-shadow:0 4px 0 #1e293b;transition:transform .08s,box-shadow .08s;font-weight:800}
+  .btn:active{transform:translateY(4px);box-shadow:0 0 0 #1e293b}
+  .btn:focus-visible,input:focus-visible{outline:4px solid #6366f1;outline-offset:2px}
+  .belt{height:14px;background:repeating-linear-gradient(90deg,#334155 0 18px,#475569 18px 36px);border-radius:8px;animation:belt .6s linear infinite}
+  @keyframes belt{to{background-position:36px 0}}
+  @keyframes slide{0%{transform:translateX(-140px) rotate(-8deg);opacity:0}60%{transform:translateX(8px) rotate(3deg);opacity:1}100%{transform:none}}
+  .slide{animation:slide .55s ease-out}
+  @keyframes bob{50%{transform:translateY(-6px)}}
+  .bob{animation:bob 2s ease-in-out infinite}
+  @media (prefers-reduced-motion:reduce){.belt,.slide,.bob{animation:none}}
+  input[type=range]{accent-color:#6366f1;height:2rem}
+  .tbl th{position:sticky;top:0;background:#c7d2fe}
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ===== LAYAR MENU ===== -->
+<div id="screenMenu" class="min-h-screen bg-indigo-500 flex flex-col items-center justify-center px-4 py-8">
+  <div class="max-w-xl w-full text-center">
+    <div class="bob inline-block"><svg width="170" height="170" viewBox="0 0 96 96" aria-label="Robo-Bernoulli">
+        <line x1="48" y1="6" x2="48" y2="18" stroke="#1e293b" stroke-width="4"/>
+        <circle cx="48" cy="6" r="5" fill="#facc15" stroke="#1e293b" stroke-width="3"/>
+        <rect x="14" y="18" width="68" height="56" rx="16" fill="#e0e7ff" stroke="#1e293b" stroke-width="4"/>
+        <rect x="6" y="36" width="8" height="18" rx="3" fill="#fb923c" stroke="#1e293b" stroke-width="3"/>
+        <rect x="82" y="36" width="8" height="18" rx="3" fill="#fb923c" stroke="#1e293b" stroke-width="3"/>
+        <circle cx="34" cy="44" r="9" fill="#fff" stroke="#1e293b" stroke-width="3"/><circle cx="62" cy="44" r="9" fill="#fff" stroke="#1e293b" stroke-width="3"/>
+        <circle cx="35" cy="45" r="4" fill="#1e293b"/><circle cx="63" cy="45" r="4" fill="#1e293b"/>
+        <path d="M32 60 Q48 72 64 60" fill="none" stroke="#1e293b" stroke-width="4" stroke-linecap="round"/>
+        <rect x="30" y="76" width="36" height="14" rx="5" fill="#34d399" stroke="#1e293b" stroke-width="3"/>
+      </svg></div>
+    <h1 class="text-3xl sm:text-5xl font-extrabold text-white leading-tight mt-2">Bernoulli Factory</h1>
+    <p class="num text-xl sm:text-2xl font-bold text-yellow-300">Laboratorium Kontrol Kualitas</p>
+    <div class="mt-4 inline-block bg-white text-slate-800 border-[3px] border-slate-800 rounded-2xl px-4 py-2 font-bold">
+      Halo, Teman Peneliti! Aku Robo-Bernoulli 🤖. Mau ikut memeriksa kualitas barang di pabrikku?
+    </div>
+    <div class="grid gap-3 mt-6 text-lg">
+      <button id="btnStart" class="btn bg-emerald-400 hover:bg-emerald-300 py-4 text-2xl">▶ Mulai Percobaan</button>
+      <button id="btnHow" class="btn bg-amber-300 hover:bg-amber-200 py-3" aria-expanded="false">📖 Petunjuk Percobaan</button>
+    </div>
+    <div id="infoHow" class="card hidden text-left p-5 mt-5">
+      <h2 class="text-xl font-extrabold mb-2">Petunjuk Percobaan</h2>
+      <ol class="list-decimal pl-5 space-y-1 font-semibold">
+        <li>Atur tingkat keandalan mesin (p) sesuai instruksi LKPD.</li>
+        <li>Tekan <b>Produksi 1 Barang</b> atau <b>Produksi 10 Barang Sekaligus</b>.</li>
+        <li>Amati status barang: Lolos Uji (hijau) atau Gagal Uji (merah).</li>
+        <li>Catat n dan k pada tabel pengamatan, lalu hitung sendiri k ÷ n.</li>
+        <li>Perhatikan grafik: apakah garis ungu mendekati garis oranye (p) saat n makin besar?</li>
+        <li>Tekan <b>Reset Data</b> untuk memulai percobaan baru.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LAYAR LABORATORIUM ===== -->
+<div id="screenLab" class="hidden min-h-screen pb-10">
+
+<!-- HEADER -->
+<header class="bg-indigo-500 border-b-4 border-slate-800">
+  <div class="max-w-6xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center gap-4">
+    <div class="bob shrink-0">
+      <svg width="96" height="96" viewBox="0 0 96 96" aria-label="Robo-Bernoulli">
+        <line x1="48" y1="6" x2="48" y2="18" stroke="#1e293b" stroke-width="4"/>
+        <circle cx="48" cy="6" r="5" fill="#facc15" stroke="#1e293b" stroke-width="3"/>
+        <rect x="14" y="18" width="68" height="56" rx="16" fill="#e0e7ff" stroke="#1e293b" stroke-width="4"/>
+        <rect x="6" y="36" width="8" height="18" rx="3" fill="#fb923c" stroke="#1e293b" stroke-width="3"/>
+        <rect x="82" y="36" width="8" height="18" rx="3" fill="#fb923c" stroke="#1e293b" stroke-width="3"/>
+        <circle cx="34" cy="44" r="9" fill="#fff" stroke="#1e293b" stroke-width="3"/><circle cx="62" cy="44" r="9" fill="#fff" stroke="#1e293b" stroke-width="3"/>
+        <circle cx="35" cy="45" r="4" fill="#1e293b"/><circle cx="63" cy="45" r="4" fill="#1e293b"/>
+        <path d="M32 60 Q48 72 64 60" fill="none" stroke="#1e293b" stroke-width="4" stroke-linecap="round"/>
+        <rect x="30" y="76" width="36" height="14" rx="5" fill="#34d399" stroke="#1e293b" stroke-width="3"/>
+      </svg>
+    </div>
+    <div class="text-center sm:text-left text-white">
+      <h1 class="text-2xl sm:text-4xl font-extrabold leading-tight">Laboratorium Kontrol Kualitas<br class="hidden sm:block"> <span class="text-yellow-300">Bernoulli Factory</span></h1>
+      <div id="robotBubble" class="mt-3 inline-block bg-white text-slate-800 border-[3px] border-slate-800 rounded-2xl px-4 py-2 font-bold text-sm sm:text-base" role="status" aria-live="polite">
+        Halo, Teman Peneliti! Aku Robo-Bernoulli 🤖. Setiap barang punya dua kemungkinan: Lolos atau Gagal. Yuk, produksi barang dan catat hasilnya!
+      </div>
+    </div>
+    <button id="btnMenu" class="btn bg-white hover:bg-yellow-100 py-2 px-4 sm:ml-auto shrink-0">🏠 Menu</button>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 mt-6 grid lg:grid-cols-5 gap-6">
+
+  <!-- KOLOM KIRI -->
+  <section class="lg:col-span-2 flex flex-col gap-6">
+
+    <!-- PANEL KONTROL -->
+    <div class="card p-5">
+      <h2 class="text-xl font-extrabold mb-3">⚙️ Panel Kontrol Mesin</h2>
+      <label for="pSlider" class="font-bold block">Tingkat keandalan mesin (p)</label>
+      <div class="flex items-center gap-3">
+        <input id="pSlider" type="range" min="0.05" max="0.95" step="0.05" value="0.7" class="flex-1">
+        <span id="pLabel" class="num text-2xl font-extrabold text-indigo-600 w-24 text-right">0,70 (70%)</span>
+      </div>
+      <p class="text-sm text-slate-600 mt-1">Peluang teoretis sebuah barang lolos uji. Mengubah p di tengah percobaan membuat data bercampur, jadi tekan Reset Data dulu ya.</p>
+      <div class="grid gap-3 mt-4">
+        <button id="btn1" class="btn bg-emerald-400 hover:bg-emerald-300 py-3 text-lg">📦 Produksi 1 Barang</button>
+        <button id="btn10" class="btn bg-amber-300 hover:bg-amber-200 py-3 text-lg">🏭 Produksi 10 Barang Sekaligus</button>
+        <button id="btnReset" class="btn bg-white hover:bg-rose-100 py-2">🔄 Reset Data</button>
+      </div>
+    </div>
+
+    <!-- KONVEYOR -->
+    <div class="card p-5">
+      <h2 class="text-xl font-extrabold mb-3">🔍 Konveyor &amp; Pemeriksaan</h2>
+      <div class="bg-sky-100 border-[3px] border-slate-800 rounded-2xl p-4 text-center min-h-[210px] flex flex-col justify-end">
+        <div id="itemArea" class="flex-1 flex flex-col items-center justify-center py-2">
+          <p class="text-slate-500 font-bold">Belum ada barang. Tekan tombol produksi!</p>
+        </div>
+        <div class="belt" aria-hidden="true"></div>
+        <div class="flex justify-between px-6" aria-hidden="true"><span class="w-5 h-5 rounded-full bg-slate-700 -mt-0.5"></span><span class="w-5 h-5 rounded-full bg-slate-700 -mt-0.5"></span><span class="w-5 h-5 rounded-full bg-slate-700 -mt-0.5"></span></div>
+      </div>
+      <p id="batchInfo" class="mt-3 text-sm font-bold text-slate-600 min-h-[1.25rem]"></p>
+    </div>
+  </section>
+
+  <!-- KOLOM KANAN -->
+  <section class="lg:col-span-3 flex flex-col gap-6">
+
+    <!-- STATISTIK -->
+    <div class="grid grid-cols-3 gap-3 text-center">
+      <div class="card py-3 bg-sky-100"><div class="text-xs font-bold">Total Produksi (n)</div><div id="sN" class="num text-3xl font-extrabold">0</div></div>
+      <div class="card py-3 bg-emerald-100"><div class="text-xs font-bold">Lolos (k)</div><div id="sK" class="num text-3xl font-extrabold text-emerald-600">0</div></div>
+      <div class="card py-3 bg-rose-100"><div class="text-xs font-bold">Gagal (n − k)</div><div id="sF" class="num text-3xl font-extrabold text-rose-600">0</div></div>
+    </div>
+
+    <!-- GRAFIK -->
+    <div class="card p-5">
+      <h2 class="text-xl font-extrabold">📈 Grafik Hukum Bernoulli</h2>
+      <p class="text-sm text-slate-600 mb-2">Garis ungu = peluang hasil percobaanmu. Garis putus-putus oranye = peluang teoretis (p).</p>
+      <div class="overflow-hidden">
+        <svg id="chart" viewBox="0 0 600 260" class="w-full h-auto" role="img" aria-label="Grafik peluang empiris terhadap jumlah percobaan"></svg>
+      </div>
+    </div>
+
+    <!-- TABEL -->
+    <div class="card p-5">
+      <h2 class="text-xl font-extrabold mb-3">📋 Tabel Pengamatan</h2>
+      <div class="max-h-80 overflow-auto border-2 border-slate-300 rounded-xl">
+        <table class="tbl w-full text-center text-sm sm:text-base">
+          <thead><tr>
+            <th class="py-2 px-2">Percobaan ke-</th><th class="px-2">Hasil Barang</th><th class="px-2">Total Produksi (n)</th><th class="px-2">Jumlah Lolos (k)</th>
+          </tr></thead>
+          <tbody id="tbody"><tr><td colspan="4" class="py-6 text-slate-500 font-bold">Tabel masih kosong. Mulai percobaanmu!</td></tr></tbody>
+        </table>
+      </div>
+      <p class="text-xs text-slate-500 mt-2">Data terbaru ada di bagian atas. Tabel menampilkan maksimal 300 baris terakhir.</p>
+    </div>
+  </section>
+</main>
+</div>
+
+<button id="btnMusic" class="btn bg-white hover:bg-yellow-100 py-2 px-4 fixed right-4 z-50 text-sm" style="bottom:calc(1rem + env(safe-area-inset-bottom,0px))" aria-pressed="false">🔇 Musik: Mati</button>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  let n = 0, k = 0, rows = [], hist = []; // hist: {n, ratio}
+  const fmt = (x, d = 2) => x.toFixed(d).replace('.', ',');
+  const getP = () => parseFloat($('pSlider').value);
+
+  const say = t => $('robotBubble').textContent = t;
+
+  function updateP() {
+    const p = getP();
+    $('pLabel').textContent = `${fmt(p)} (${Math.round(p * 100)}%)`;
+    drawChart();
+  }
+
+  function produce(count) {
+    const p = getP();
+    let batchPass = 0, last = null;
+    for (let i = 0; i < count; i++) {
+      const pass = Math.random() < p;
+      n++; if (pass) { k++; batchPass++; }
+      const ratio = k / n;
+      rows.push({ i: n, pass, n, k, ratio });
+      hist.push({ n, ratio });
+      last = pass;
+    }
+    showItem(last);
+    $('batchInfo').textContent = count > 1 ? `Dari ${count} barang tadi: ${batchPass} lolos dan ${count - batchPass} gagal.` : '';
+    render();
+    robotTalk();
+  }
+
+  function showItem(pass) {
+    Music.sfx(pass);
+    const a = $('itemArea');
+    const c = pass ? ['bg-emerald-400', '✅', 'LOLOS UJI', 'text-emerald-700 bg-emerald-100 border-emerald-600']
+                   : ['bg-rose-500', '❌', 'GAGAL UJI', 'text-rose-700 bg-rose-100 border-rose-600'];
+    a.innerHTML = `<div class="slide flex flex-col items-center gap-2">
+      <div class="w-20 h-20 ${c[0]} border-[3px] border-slate-800 rounded-xl grid place-items-center text-4xl shadow-[0_4px_0_#1e293b]" aria-hidden="true">${c[1]}</div>
+      <span class="num font-extrabold text-lg px-3 py-0.5 rounded-full border-2 ${c[3]}">${c[2]}</span></div>`;
+  }
+
+  function render() {
+    $('sN').textContent = n; $('sK').textContent = k; $('sF').textContent = n - k;
+    const tb = $('tbody');
+    if (!rows.length) {
+      tb.innerHTML = '<tr><td colspan="4" class="py-6 text-slate-500 font-bold">Tabel masih kosong. Mulai percobaanmu!</td></tr>';
+    } else {
+      tb.innerHTML = rows.slice(-300).reverse().map(r => `<tr class="${r.pass ? 'bg-emerald-50' : 'bg-rose-50'} border-b border-slate-200">
+        <td class="py-1.5">${r.i}</td>
+        <td><span class="px-2 py-0.5 rounded-full text-white font-extrabold text-xs sm:text-sm ${r.pass ? 'bg-emerald-500' : 'bg-rose-500'}">${r.pass ? 'Lolos' : 'Gagal'}</span></td>
+        <td>${r.n}</td><td>${r.k}</td></tr>`).join('');
+    }
+    drawChart();
+  }
+
+  function drawChart() {
+    const W = 600, H = 260, L = 44, R = 14, T = 12, B = 34, p = getP();
+    const maxN = Math.max(10, n);
+    const x = v => L + (v - 1) / (maxN - 1) * (W - L - R);
+    const y = v => T + (1 - v) * (H - T - B);
+    let s = '';
+    for (let g = 0; g <= 1.001; g += 0.25) {
+      s += `<line x1="${L}" x2="${W - R}" y1="${y(g)}" y2="${y(g)}" stroke="#e2e8f0" stroke-width="1.5"/>
+            <text x="${L - 6}" y="${y(g) + 4}" text-anchor="end" font-size="12" fill="#475569">${fmt(g)}</text>`;
+    }
+    for (let t = 0; t <= 4; t++) {
+      const v = Math.round(1 + (maxN - 1) * t / 4);
+      s += `<text x="${x(v)}" y="${H - 14}" text-anchor="middle" font-size="12" fill="#475569">${v}</text>`;
+    }
+    s += `<text x="${(L + W - R) / 2}" y="${H - 1}" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">Jumlah percobaan (n)</text>`;
+    s += `<line x1="${L}" x2="${W - R}" y1="${y(p)}" y2="${y(p)}" stroke="#f97316" stroke-width="3" stroke-dasharray="8 6"/>
+          <text x="${W - R}" y="${y(p) - 6}" text-anchor="end" font-size="12" font-weight="800" fill="#ea580c">p = ${fmt(p)}</text>`;
+    if (hist.length) {
+      const step = Math.ceil(hist.length / 400);
+      const pts = hist.filter((_, i) => i % step === 0 || i === hist.length - 1)
+        .map(h => `${x(h.n).toFixed(1)},${y(h.ratio).toFixed(1)}`);
+      if (pts.length === 1) pts.push(pts[0]);
+      s += `<polyline points="${pts.join(' ')}" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
+      const l = hist[hist.length - 1];
+      s += `<circle cx="${x(l.n)}" cy="${y(l.ratio)}" r="6" fill="#7c3aed" stroke="#fff" stroke-width="2"/>`;
+    }
+    $('chart').innerHTML = s;
+  }
+
+  function robotTalk() {
+    const p = getP();
+    if (n < 5) say('Bagus! Terus produksi dan catat hasil di tabel ya. 📝');
+    else if (n < 30) say(`Sudah ${n} barang, ${k} lolos. Hitung sendiri k ÷ n, lalu bandingkan dengan p = ${fmt(p)}. Dekat atau jauh?`);
+    else say(`Sudah n = ${n}. Coba tambah lagi dan lihat garis ungu makin mendekati garis oranye. 🚀`);
+  }
+
+  $('btn1').onclick = () => produce(1);
+  $('btn10').onclick = () => produce(10);
+  $('btnReset').onclick = () => {
+    n = 0; k = 0; rows = []; hist = [];
+    $('itemArea').innerHTML = '<p class="text-slate-500 font-bold">Belum ada barang. Tekan tombol produksi!</p>';
+    $('batchInfo').textContent = '';
+    render();
+    say('Data sudah bersih! Siap memulai percobaan baru sesuai instruksi LKPD. 🧪');
+  };
+  $('pSlider').oninput = () => {
+    updateP();
+    say(n ? 'Kamu mengubah p di tengah percobaan. Tekan Reset Data agar hasilnya tidak bercampur ya.' : `Mesin disetel p = ${fmt(getP())}. Artinya kira-kira ${Math.round(getP() * 100)} dari 100 barang akan lolos.`);
+  };
+
+  // ===== Musik latar & efek suara (dibuat dengan Web Audio, tanpa file) =====
+  const Music = (() => {
+    const S = 60 / 112 / 2; // durasi satu langkah (nada seperdelapan)
+    const mel = [[12,16,19,16,24,19,16,19],[9,12,16,12,21,16,12,16],[9,12,17,12,21,17,12,17],[7,11,14,11,19,14,11,14]];
+    const bass = [-12, -15, -19, -17]; // akord C - Am - F - G
+    let ctx, master, on = false, timer, step = 0, next = 0;
+    const hz = n => 261.63 * Math.pow(2, n / 12);
+    const tone = (f, t, d, type, v) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type; o.frequency.value = f; o.connect(g); g.connect(master);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.start(t); o.stop(t + d + 0.05);
+    };
+    const tick = () => {
+      while (next < ctx.currentTime + 0.3) {
+        const b = Math.floor(step / 8) % 4, i = step % 8;
+        tone(hz(mel[b][i]), next, S * 1.6, 'triangle', 0.14);
+        if (i % 2 === 0) tone(hz(bass[b] + (i % 4 ? 12 : 0)), next, S * 1.8, 'sine', i % 4 ? 0.08 : 0.2);
+        next += S; step++;
+      }
+    };
+    const label = () => {
+      const b = $('btnMusic');
+      b.textContent = on ? '🔊 Musik: Nyala' : '🔇 Musik: Mati';
+      b.setAttribute('aria-pressed', on);
+    };
+    const start = () => {
+      try {
+        if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); master = ctx.createGain(); master.gain.value = 0.45; master.connect(ctx.destination); }
+        ctx.resume();
+        if (!on) { on = true; next = ctx.currentTime + 0.1; timer = setInterval(tick, 100); }
+      } catch (e) { on = false; }
+      label();
+    };
+    const stop = () => { on = false; clearInterval(timer); label(); };
+    const sfx = pass => {
+      if (!ctx || !on) return;
+      const t = ctx.currentTime;
+      if (pass) { tone(hz(19), t, 0.15, 'square', 0.07); tone(hz(24), t + 0.1, 0.25, 'square', 0.07); }
+      else { tone(hz(7), t, 0.2, 'sawtooth', 0.06); tone(hz(2), t + 0.15, 0.3, 'sawtooth', 0.06); }
+    };
+    document.addEventListener('visibilitychange', () => {
+      if (!ctx || !on) return;
+      document.hidden ? ctx.suspend() : ctx.resume();
+    });
+    $('btnMusic').onclick = () => on ? stop() : start();
+    return { start, sfx };
+  })();
+
+  // ===== Navigasi menu <-> laboratorium =====
+  const screen = name => {
+    $('screenMenu').classList.toggle('hidden', name !== 'menu');
+    $('screenLab').classList.toggle('hidden', name !== 'lab');
+    window.scrollTo(0, 0);
+    if (name === 'lab') drawChart();
+  };
+  const toggleInfo = btn => {
+    const open = $('infoHow').classList.toggle('hidden') === false;
+    btn.setAttribute('aria-expanded', open);
+  };
+  $('btnStart').onclick = () => { screen('lab'); Music.start(); };
+  $('btnMenu').onclick = () => screen('menu');
+  $('btnHow').onclick = e => toggleInfo(e.currentTarget);
+
+  updateP(); render();
+})();
+</script>
+</body>
+</html>
