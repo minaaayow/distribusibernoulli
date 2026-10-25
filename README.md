@@ -1,0 +1,2 @@
+# distribusibernoulli
+Belajar distribusi bernoulli
